@@ -28,7 +28,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.basecomposemvvm.R
-import com.example.basecomposemvvm.data.model.UiState
 import com.example.basecomposemvvm.designsystem.theme.AppTheme
 import com.example.basecomposemvvm.designsystem.theme.ExpenseRed
 import com.example.basecomposemvvm.designsystem.theme.IncomeGreen
@@ -45,7 +44,7 @@ fun HomeScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
 
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.homeState.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -55,7 +54,7 @@ fun HomeScreen(
     ) {
         Spacer(modifier = Modifier.height(10.dp))
 
-        //Header Section
+        // Header Section
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -107,12 +106,16 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        //Total Balance Card
-        TotalBalanceCard()
+        // Total Balance Card
+        TotalBalanceCard(
+            balance = uiState.totalBalance,
+            income = uiState.totalIncome,
+            expense = uiState.totalExpense
+        )
 
         Spacer(modifier = Modifier.height(22.dp))
 
-        //Recent Transactions Header
+        // Recent Transactions Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -125,7 +128,7 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            TextButton(onClick = { }) {
+            TextButton(onClick = { onNavigateToCategory() }) {
                 Text(
                     stringResource(R.string.see_all),
                     style = MaterialTheme.typography.labelLarge,
@@ -137,28 +140,30 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        //Transaction List Logic
+        // Transaction List Logic
         Box(modifier = Modifier.weight(1f)) {
-            when (val state = uiState) {
-                is UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-                is UiState.Error -> {
-                    Text(
-                        text = state.message,
-                        color = ExpenseRed,
-                        modifier = Modifier.align(Alignment.Center),
-                        textAlign = TextAlign.Center
-                    )
-                }
-                is UiState.Success -> {
-                    val transactions = state.data
-                    if (transactions.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.no_transactions_found),
-                            modifier = Modifier.align(Alignment.Center),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (uiState.recentTransactions.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.no_transactions_found),
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 20.dp)
+                ) {
+                    items(uiState.recentTransactions) { item ->
+                        TransactionItem(
+                            title = item.description,
+                            amount = item.amount,
+                            date = item.date,
+                            type = item.type
                         )
+<<<<<<< HEAD
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
@@ -174,6 +179,8 @@ fun HomeScreen(
                                 )
                             }
                         }
+=======
+>>>>>>> 5f9ee58 (update roomdb + viewmodel)
                     }
                 }
             }
@@ -186,6 +193,7 @@ fun HomeScreen(
 }
 
 @Composable
+<<<<<<< HEAD
 fun TransactionItem(
     title: String,
     amount: Double,
@@ -195,6 +203,10 @@ fun TransactionItem(
     // Xác định loại giao dịch từ chuỗi "INCOME" hoặc "EXPENSE" trong DB
     val isIncome = type.equals("INCOME", ignoreCase = true)
 
+=======
+fun TransactionItem(title: String, amount: Double, date: String, type: String) {
+    val isIncome = type.equals("INCOME", ignoreCase = true)
+>>>>>>> 5f9ee58 (update roomdb + viewmodel)
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -252,7 +264,7 @@ fun TransactionItem(
 }
 
 @Composable
-fun TotalBalanceCard() {
+fun TotalBalanceCard(balance: Double, income: Double, expense: Double) {
     Card(
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -266,7 +278,7 @@ fun TotalBalanceCard() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "5,000,000 đ",
+                text = formatCurrency(balance),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onBackground
@@ -278,8 +290,17 @@ fun TotalBalanceCard() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                BalanceInfo(label = stringResource(R.string.income), amount = "8,000,000 đ", color = IncomeGreen)
-                BalanceInfo(label = stringResource(R.string.expense), amount = "3,000,000 đ", color = ExpenseRed, isEnd = true)
+                BalanceInfo(
+                    label = stringResource(R.string.income),
+                    amount = formatCurrency(income),
+                    color = IncomeGreen
+                )
+                BalanceInfo(
+                    label = stringResource(R.string.expense),
+                    amount = formatCurrency(expense),
+                    color = ExpenseRed,
+                    isEnd = true
+                )
             }
         }
     }
@@ -332,5 +353,18 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    AppTheme {
+        HomeScreen(
+            onNavigateToCategory = {},
+            onNavigateToBudget = {},
+            onNavigateToReport = {},
+            onNavigateToSetting = {}
+        )
     }
 }

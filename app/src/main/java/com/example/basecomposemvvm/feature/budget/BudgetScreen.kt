@@ -26,9 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.basecomposemvvm.App
 import com.example.basecomposemvvm.R
-import com.example.basecomposemvvm.designsystem.theme.AppTheme
 import java.text.DecimalFormat
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -470,10 +468,3 @@ fun BudgetScreen() {
 
 fun formatMoney(value: Int): String = DecimalFormat("#,###").format(value) + " đ"
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewBudget() {
-    AppTheme {
-        BudgetScreen()
-    }
-}

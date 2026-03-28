@@ -97,7 +97,9 @@ fun ReportDetailScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = formatCurrency(amount),
+                                    text = formatCurrency(
+                                        amount.toString().toDoubleOrNull() ?: 0.0
+                                    ),
                                     fontSize = 9.sp,
                                     color = colorScheme.primary,
                                     fontWeight = FontWeight.Bold

@@ -19,13 +19,31 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.basecomposemvvm.designsystem.theme.AppIcons
+<<<<<<< HEAD
+=======
+import com.example.basecomposemvvm.designsystem.theme.AppTheme
+>>>>>>> 5f9ee58 (update roomdb + viewmodel)
 import com.example.basecomposemvvm.feature.budget.BudgetScreen
 import com.example.basecomposemvvm.feature.category.CategoryScreen
 import com.example.basecomposemvvm.feature.home.HistoryScreen
 import com.example.basecomposemvvm.feature.home.HomeScreen
 import com.example.basecomposemvvm.feature.report.ReportScreen
 import com.example.basecomposemvvm.feature.setting.SettingScreen
+<<<<<<< HEAD
 import com.example.basecomposemvvm.feature.splash.SplashScreen
+=======
+// Import màn hình History của bạn (Giả sử bạn đặt tên là TransactionHistoryScreen)
+// import com.example.basecomposemvvm.feature.history.TransactionHistoryScreen
+
+object Routes {
+    const val HOME = "home"
+    const val BUDGET = "budget"
+    const val CATEGORY = "category"
+    const val REPORT = "report"
+    const val SETTING = "setting"
+    const val HISTORY = "history" // Thêm route mới cho Lịch sử
+}
+>>>>>>> 5f9ee58 (update roomdb + viewmodel)
 
 @Composable
 fun AppNavigation(
@@ -83,10 +101,21 @@ fun AppNavigation(
                                         restoreState = true
                                     }
                                 }
+<<<<<<< HEAD
                             },
                             colors = NavigationBarItemDefaults.colors(
                                 indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                             )
+=======
+                            }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurface,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurface
+>>>>>>> 5f9ee58 (update roomdb + viewmodel)
                         )
                     }
                 }
@@ -108,6 +137,7 @@ fun AppNavigation(
                 )
             }
 
+<<<<<<< HEAD
             composable(AppDestination.Home) {
                 HomeScreen(
                     onNavigateToHistory = { navController.navigate(AppDestination.History.route) },
@@ -126,6 +156,35 @@ fun AppNavigation(
             composable(AppDestination.Report) { ReportScreen() }
             composable(AppDestination.Setting) { SettingScreen() }
         }
+=======
+@Composable
+fun AppNavHost(
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navController,
+        startDestination = Routes.HOME,
+        modifier = modifier
+    ) {
+        composable(Routes.HOME) {
+            HomeScreen(
+                // Khi bấm See All ở Home, nó sẽ nhảy vào trang HISTORY
+                onNavigateToCategory = { navController.navigate(Routes.HISTORY) },
+                onNavigateToBudget = { navController.navigate(Routes.BUDGET) },
+                onNavigateToReport = { navController.navigate(Routes.REPORT) },
+                onNavigateToSetting = { navController.navigate(Routes.SETTING) }
+            )
+        }
+        composable(Routes.BUDGET) { BudgetScreen() }
+        composable(Routes.CATEGORY) { CategoryScreen() }
+        composable(Routes.REPORT) { ReportScreen() }
+        composable(Routes.SETTING) { SettingScreen() }
+
+        composable(Routes.HISTORY) {
+            Text("Full Transaction History List Goes Here")
+        }
+>>>>>>> 5f9ee58 (update roomdb + viewmodel)
     }
 }
 
@@ -136,6 +195,7 @@ data class BottomNavItem(
     val label: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val route: String
+<<<<<<< HEAD
 )
 
 /**
@@ -152,4 +212,20 @@ fun NavGraphBuilder.composable(
         deepLinks = deepLinks,
         content = content,
     )
+=======
+) {
+    Home("Home", AppIcons.NavHome, Routes.HOME),
+    Category("Category", AppIcons.NavCategory, Routes.CATEGORY),
+    Budget("Budget", AppIcons.NavBudget, Routes.BUDGET),
+    Report("Report", AppIcons.NavReport, Routes.REPORT),
+    Setting("Setting", AppIcons.NavSettings, Routes.SETTING)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AppNavigationPreview() {
+    AppTheme {
+        AppNavigation()
+    }
+>>>>>>> 5f9ee58 (update roomdb + viewmodel)
 }

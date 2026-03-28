@@ -43,6 +43,7 @@ turbine = "1.1.0"
 junit = "4.13.2"
 androidxTestJunit = "1.2.1"
 espresso = "3.6.1"
+transportApi = "4.1.0"
 
 [libraries]
 # Compose BOM
@@ -116,6 +117,7 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+transport-api = { group = "com.google.android.datatransport", name = "transport-api", version.ref = "transportApi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

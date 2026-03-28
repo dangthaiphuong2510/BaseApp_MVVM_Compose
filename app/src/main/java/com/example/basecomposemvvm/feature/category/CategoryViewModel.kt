@@ -4,11 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.basecomposemvvm.data.remote.repository.AppRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -17,55 +15,86 @@ data class CategoryUiState(
     val totalBalance: Double = 0.0,
     val totalIncome: Double = 0.0,
     val totalExpense: Double = 0.0,
-    val categoryTotals: Map<String, Double> = emptyMap()
+    val categoryTotals: Map<String, Double> = emptyMap(),
+    val categories: List<CategoryItem> = emptyList()
 )
+
+data class CategoryItem(val name: String, val iconName: String, val isExpense: Boolean)
 
 @HiltViewModel
 class CategoryViewModel @Inject constructor(
     private val repository: AppRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<CategoryUiState> = repository.getAllLocalTransactions()
-        .map { transactions ->
-            val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
-            val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
+    init {
+        checkAndSeedCategories()
+    }
+    val uiState: StateFlow<CategoryUiState> = combine(
+        repository.getAllLocalTransactions(),
+        repository.getAllCategories()
+    ) { transactions, categories ->
 
-            val totals = transactions.groupBy { it.category }
-                .mapValues { entry -> entry.value.sumOf { it.amount } }
+        val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
 
-            CategoryUiState(
-                totalBalance = income - expense,
-                totalIncome = income,
-                totalExpense = expense,
-                categoryTotals = totals
-            )
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CategoryUiState()
+        val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
+
+        val totals = transactions.groupBy { it.category }
+            .mapValues { entry -> entry.value.sumOf { it.amount } }
+
+        CategoryUiState(
+            totalBalance = income - expense,
+            totalIncome = income,
+            totalExpense = expense,
+            categoryTotals = totals,
+            categories = categories.map { CategoryItem(it.name, it.iconName, it.isExpense) }
         )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CategoryUiState())
 
-    fun addTransaction(amount: Double, category: String, note: String, isExpense: Boolean) {
+    private fun checkAndSeedCategories() {
         viewModelScope.launch {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-            val date = LocalDateTime.now().format(formatter)
-
-            val type = if (isExpense) "EXPENSE" else "INCOME"
-
-            repository.addTransaction(
-                description = note,
-                amount = amount,
-                date = date,
-                category = category,
-                type = type
-            ).collect { result ->
+            val current = repository.getAllCategories().first()
+            if (current.isEmpty()) {
+                val defaults = listOf(
+                    CategoryItem("Food", "Food", true),
+                    CategoryItem("Transport", "Transport", true),
+                    CategoryItem("Salary", "Salary", false),
+                    CategoryItem("Home", "Home", true)
+                )
+                defaults.forEach {
+                    repository.addCategory(it.name, it.iconName, it.isExpense)
+                }
             }
         }
     }
 
-    fun addNewCategory(name: String) {
+    fun addTransaction(amount: Double, category: String, note: String, isExpense: Boolean) {
         viewModelScope.launch {
+            repository.addTransaction(
+                description = note,
+                amount = amount,
+                date = LocalDate.now().toString(),
+                category = category,
+                type = if (isExpense) "EXPENSE" else "INCOME"
+            ).first()
+        }
+    }
+
+    fun deleteCategory(name: String) {
+        viewModelScope.launch {
+            repository.deleteCategory(name)
+        }
+    }
+
+    fun addNewCategory(name: String, iconName: String, isExpense: Boolean) {
+        viewModelScope.launch {
+            repository.addCategory(name, iconName, isExpense)
+        }
+    }
+
+    fun updateCategory(oldName: String, newName: String, newIcon: String, isExpense: Boolean) {
+        viewModelScope.launch {
+            repository.deleteCategory(oldName)
+            repository.addCategory(newName, newIcon, isExpense)
         }
     }
 }

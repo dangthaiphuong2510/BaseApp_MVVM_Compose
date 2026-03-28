@@ -6,6 +6,8 @@ import com.example.basecomposemvvm.data.model.TransactionResponse
 import com.example.basecomposemvvm.data.model.TransactionRequest
 import com.example.basecomposemvvm.data.local.dao.TransactionDao
 import com.example.basecomposemvvm.data.local.entity.TransactionEntity
+import com.example.basecomposemvvm.data.local.dao.CategoryDao
+import com.example.basecomposemvvm.data.local.entity.CategoryEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -16,10 +18,8 @@ import javax.inject.Singleton
 interface AppRepository {
     fun getUserProfile(): Flow<Result<UserResponse>>
 
-    // Lấy dữ liệu từ API và lưu vào Room
     fun getTransactions(): Flow<Result<List<TransactionResponse>>>
 
-    // Thêm giao dịch mới lên API và lưu vào Room
     fun addTransaction(
         description: String,
         amount: Double,
@@ -29,12 +29,19 @@ interface AppRepository {
     ): Flow<Result<TransactionResponse>>
 
     fun getAllLocalTransactions(): Flow<List<TransactionEntity>>
+
+    fun getAllCategories(): Flow<List<CategoryEntity>>
+
+    suspend fun addCategory(name: String, iconName: String, isExpense: Boolean)
+
+    suspend fun deleteCategory(name: String)
 }
 
 @Singleton
 class AppRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val categoryDao: CategoryDao
 ) : AppRepository {
 
     override fun getUserProfile(): Flow<Result<UserResponse>> = flow {
@@ -50,13 +57,31 @@ class AppRepositoryImpl @Inject constructor(
         return transactionDao.getAllTransactions()
     }
 
+    override fun getAllCategories(): Flow<List<CategoryEntity>> {
+        return categoryDao.getAllCategories()
+    }
+
+    override suspend fun addCategory(name: String, iconName: String, isExpense: Boolean) {
+        val category = CategoryEntity(
+            name = name,
+            iconName = iconName,
+            isExpense = isExpense
+        )
+        categoryDao.insertCategory(category)
+    }
+
+    override suspend fun deleteCategory(name: String) {
+        categoryDao.deleteCategoryByName(name)
+        transactionDao.deleteTransactionByCategory(name)
+    }
+
     override fun getTransactions(): Flow<Result<List<TransactionResponse>>> = flow {
         try {
             val response = apiService.getTransactions()
 
             val entities = response.map {
                 TransactionEntity(
-                    id = it.id,
+                    id = 0,
                     amount = it.amount,
                     description = it.description,
                     date = it.date,
@@ -64,9 +89,10 @@ class AppRepositoryImpl @Inject constructor(
                     type = it.type
                 )
             }
-            transactionDao.insertTransactions(entities)
 
+            transactionDao.insertTransactions(entities)
             emit(Result.success(response))
+
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
@@ -79,21 +105,25 @@ class AppRepositoryImpl @Inject constructor(
         category: String,
         type: String
     ): Flow<Result<TransactionResponse>> = flow {
-        try {
-            val request = TransactionRequest(
-                description = description,
-                amount = amount,
-                date = date,
-                category = category,
-                type = type
-            )
-            val response = apiService.addTransaction(request)
 
-            transactionDao.insertTransaction(
-                TransactionEntity(
-                    id = response.id,
-                    amount = amount,
+        //INSERT LOCAL
+        val local = TransactionEntity(
+            id = 0, // autoGenerate
+            amount = amount,
+            description = description,
+            date = date,
+            category = category,
+            type = type
+        )
+
+        transactionDao.insertTransaction(local)
+
+        try {
+            //GỌI API
+            val response = apiService.addTransaction(
+                TransactionRequest(
                     description = description,
+                    amount = amount,
                     date = date,
                     category = category,
                     type = type
@@ -101,8 +131,21 @@ class AppRepositoryImpl @Inject constructor(
             )
 
             emit(Result.success(response))
+
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            //API fail vẫn OK
+            emit(
+                Result.success(
+                    TransactionResponse(
+                        id = System.currentTimeMillis().toString(),
+                        amount = amount,
+                        description = description,
+                        date = date,
+                        category = category,
+                        type = type
+                    )
+                )
+            )
         }
     }.flowOn(Dispatchers.IO)
 }

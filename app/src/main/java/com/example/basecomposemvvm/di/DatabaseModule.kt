@@ -3,6 +3,7 @@ package com.example.basecomposemvvm.di
 import android.content.Context
 import androidx.room.Room
 import com.example.basecomposemvvm.data.local.AppDatabase
+import com.example.basecomposemvvm.data.local.dao.CategoryDao
 import com.example.basecomposemvvm.data.local.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
@@ -33,5 +34,11 @@ object DatabaseModule {
     @Singleton
     fun provideTransactionDao(database: AppDatabase): TransactionDao {
         return database.transactionDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCategoryDao(database: AppDatabase): CategoryDao {
+        return database.categoryDao()
     }
 }
